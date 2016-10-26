@@ -1,5 +1,8 @@
 __author__ = 'Taavi'
 
+import common.utilities as util
+import common.header as header
+
 import threading
 import time
 import Tkinter as Tk
@@ -54,31 +57,25 @@ class Application(Tk.Frame):
 
 
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
+        self.last_text.pop()
         master_frame.pack()
 
     def text_changed(self, event):
         current_text = list(unicode(self.text_box.get("1.0", Tk.END)))
-        #logging.debug("Curr: " + unicode(current_text))
-        #logging.debug("Last: " + unicode(self.last_text))
+        current_text.pop()
 
-        row = 1
-        col = 0
+        # Deleting is just adding the other way around :D
 
-        for i in range(len(current_text) - 1):
-            col += 1
+        if len(current_text) < len(self.last_text):
+            logging.debug("Deleted")
+            diff, final_row, final_col = util.find_changes(self.last_text, current_text)
+            # Report delete
+        else:
+            logging.debug("Added")
+            diff, final_row, final_col = util.find_changes(current_text, self.last_text)
+            # Report addition
 
-            if current_text[i] == '\n':
-                row += 1
-                col = 0
-
-            if current_text[i] != self.last_text[i]:
-                #logging.debug("New char: " + unicode(current_text[i]))
-                logging.debug(unicode(current_text[i]+ ' ' + str(row) + ":" + str(col - 1)))
-                break
-
-
-
-        #print unicode(self.text_box.get("1.0", Tk.END))
+        logging.debug(diff + " at: " + str(final_row) + "." + str(final_col))
         self.last_text = current_text
     #
     # Private functions
@@ -101,13 +98,13 @@ class Application(Tk.Frame):
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+logging.debug(header.TEXT_ADDED)
+if 2 == header.TEXT_ADDED:
+    logging.debug("It does!")
+
 root = Tk.Tk()
 app = Application(master=root)
-
-#t = TestThread.TestThread(app.add_message, "Tekst")
-#t.start()
-
-logging.info("THREAD CREATED")
 app.mainloop()
 
 

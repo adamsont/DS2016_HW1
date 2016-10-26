@@ -13,6 +13,5 @@ class TestThread(threading.Thread):
 
     def run(self):
         while True:
-            logging.info("TestThread loop")
             self.func(self.txt)
             time.sleep(1)

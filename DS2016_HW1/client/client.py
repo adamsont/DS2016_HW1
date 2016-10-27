@@ -1,14 +1,12 @@
 __author__ = 'Taavi'
 
-import common.utilities as util
-import common.header as header
-
-import threading
-import time
 import Tkinter as Tk
-import tkFileDialog
 import Queue
 import logging
+
+from common.protocol import *
+import common.utilities.utilities as util
+import clientconnection
 import TestThread
 
 
@@ -34,6 +32,7 @@ class Application(Tk.Frame):
         self.create_widgets()
         self.inner_loop()
 
+    # Handles all requests from another threads and runs them in its own
     def inner_loop(self):
         try:
             f = self.msg_queue.get(False)
@@ -41,7 +40,7 @@ class Application(Tk.Frame):
         except Queue.Empty:
             pass
 
-        self.master.after(100, self.inner_loop)
+        self.master.after(10, self.inner_loop)
 
     def create_widgets(self):
         master_frame = Tk.Frame(self)
@@ -51,27 +50,33 @@ class Application(Tk.Frame):
 
         self.text_box = Tk.Text(master_frame, width=1000, height=1000)
         self.text_box.insert(Tk.END, "Texst")
-        self.text_box.bind("<KeyRelease>", self.text_changed)
+        self.text_box.bind("<KeyRelease>", self.on_text_changed_handler)
         self.text_box.pack(side=Tk.TOP)
-
-
 
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
         self.last_text.pop()
         master_frame.pack()
 
-    def text_changed(self, event):
+    def on_text_changed_handler(self, event):
         current_text = list(unicode(self.text_box.get("1.0", Tk.END)))
         current_text.pop()
 
         # Deleting is just adding the other way around :D
 
+        change = len(current_text) - len(self.last_text)
+
+        if change == 0:
+            return
+
+        #logging.debug("Curr: " + unicode(current_text))
+        #logging.debug("Last: " + unicode(self.last_text))
+
         if len(current_text) < len(self.last_text):
-            logging.debug("Deleted")
+            logging.debug("Deleted " + str(change))
             diff, final_row, final_col = util.find_changes(self.last_text, current_text)
             # Report delete
         else:
-            logging.debug("Added")
+            logging.debug("Added " + str(change))
             diff, final_row, final_col = util.find_changes(current_text, self.last_text)
             # Report addition
 
@@ -80,9 +85,14 @@ class Application(Tk.Frame):
     #
     # Private functions
     #
+    def on_text_changed(self, event):
+        self.msg_queue.put(lambda: self.on_text_changed_handler(event))
 
-    def add_text(self, text):
-        self.text_box.insert(Tk.END, text)
+    def add_text_handler(self, row, col, text):
+        self.on_text_changed_handler(None)
+        self.text_box.insert(str(int(row))+'.'+str(int(col)), text)
+        self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
+        self.last_text.pop()
 
     def test(self):
         self.text_box.insert("1.3", "CHANGE")
@@ -91,20 +101,22 @@ class Application(Tk.Frame):
     # Public functions, add messages to the queue
     #
 
-    def add_message(self, text):
-        logging.info("add_message")
-        self.msg_queue.put(lambda: self.add_text(text))
+    def add_text(self, text):
+        self.msg_queue.put(lambda: self.add_text_handler(1, 5, text))
 
 
 
 logging.basicConfig(level=logging.DEBUG)
 
-logging.debug(header.TEXT_ADDED)
-if 2 == header.TEXT_ADDED:
-    logging.debug("It does!")
-
 root = Tk.Tk()
 app = Application(master=root)
+
+t = TestThread.TestThread(app.add_text, "ABC")
+t.start()
+
+connection = clientconnection.ClientConnection(SERVER_HOST, SERVER_PORT)
 app.mainloop()
+
+connection.terminate()
 
 

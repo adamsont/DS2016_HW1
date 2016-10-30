@@ -4,7 +4,8 @@ import Tkinter as Tk
 import Queue
 import logging
 
-from common.protocol import *
+import common.protocol as P
+
 import common.utilities.utilities as util
 import clientconnection
 import TestThread
@@ -114,7 +115,9 @@ app = Application(master=root)
 t = TestThread.TestThread(app.add_text, "ABC")
 t.start()
 
-connection = clientconnection.ClientConnection(SERVER_HOST, SERVER_PORT)
+connection = clientconnection.ClientConnection(P.SERVER_HOST, P.SERVER_PORT)
+
+
 app.mainloop()
 
 connection.terminate()

@@ -2,7 +2,8 @@ __author__ = 'Taavi'
 
 from socket import *
 
-import common.protocol as P
+import common.Protocol as P
+import common.packets.Packets as Packets
 
 import logging
 
@@ -17,19 +18,11 @@ while True:
     logging.info("Connected by: " + str(address))
 
     for i in range(10):
-        payload = "Hello :!||||:::!" + str(i)
-        packet_type = format(P.DEBUG_MESSAGE, '02d')
-        payload_length = format(len(payload), '03d')
-        packet = P.PACKET_START + \
-                 P.HEADER_FIELD_SEPARATOR + \
-                 packet_type + \
-                 P.HEADER_FIELD_SEPARATOR + \
-                 payload_length + \
-                 P.HEADER_FIELD_SEPARATOR + \
-                 payload
+        packet = Packets.UpdateTextPacket('A', i, i*10, 'ABCD')
+        message = packet.serialize()
 
-        logging.info("Sending packet: <" + packet + ">")
-        connection.send(packet)
+        logging.info("Sending packet: <" + message + ">")
+        connection.send(message)
 
 server_socket.shutdown(socket.SHUT_WR)
 server_socket.close()

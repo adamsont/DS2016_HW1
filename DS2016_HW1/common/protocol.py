@@ -33,17 +33,27 @@ DEBUG_MESSAGE = 99
 # Server <-> Client
 #
 
-UPDATE_TEXT_DELETED = 20
-UPDATE_TEXT_ADDED = 21
+UPDATE_TEXT = 20 # <A/D>:row:col:text
 
 headers = [INTRODUCTION,
            REQUEST_DOCUMENT_LIST,
            REQUEST_DOCUMENT,
            CONFIRMATION,
            RESPOND_DOCUMENT_LIST,
-           UPDATE_TEXT_DELETED,
-           UPDATE_TEXT_ADDED,
+           UPDATE_TEXT,
            DEBUG_MESSAGE]
+
+
+def compose_header(header, payload_len):
+    ret_header = PACKET_START
+    ret_header += HEADER_FIELD_SEPARATOR
+    ret_header += format(header, '02d')
+    ret_header += HEADER_FIELD_SEPARATOR
+    ret_header += format(payload_len, '03d')
+    ret_header += HEADER_FIELD_SEPARATOR
+
+    return ret_header
+
 
 def check_header(header):
     parts = header.split(HEADER_FIELD_SEPARATOR)

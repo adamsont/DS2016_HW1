@@ -1,11 +1,11 @@
 __author__ = 'Taavi'
 
 from socket import *
-from common.utilities.actor import *
+from common.utilities.Actor import *
 from time import sleep
 import logging
 import threading
-import common.protocol as P
+import common.Protocol as P
 import Queue
 
 

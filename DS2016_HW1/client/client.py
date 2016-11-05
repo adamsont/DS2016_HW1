@@ -76,17 +76,21 @@ class Application(Tk.Frame):
 
         if len(current_text) < len(self.last_text):
             logging.debug("Deleted " + str(change))
-            diff, final_row, final_col = util.find_changes(self.last_text, current_text)
+            diff, row, col = util.find_changes(self.last_text, current_text)
             # Report delete
-            self.connection.send_text_update('D', final_row, final_col, diff)
+            self.report_change('D', row, col, diff)
         else:
             logging.debug("Added " + str(change))
-            diff, final_row, final_col = util.find_changes(current_text, self.last_text)
+            diff, row, col = util.find_changes(current_text, self.last_text)
             # Report addition
-            self.connection.send_text_update('A', final_row, final_col, diff)
+            self.report_change('A', row, col, diff)
 
-        logging.debug(diff + " at: " + str(final_row) + "." + str(final_col))
+        logging.debug(diff + " at: " + str(row) + "." + str(col))
         self.last_text = current_text
+
+    def report_change(self, option, row, col, text):
+        self.connection.send_text_update(option, row, col, text)
+
     #
     # Private functions
     #
@@ -103,6 +107,16 @@ class Application(Tk.Frame):
 
     def remove_text(self, row, col, text):
         logging.info('Removing text: ' + text + " at " + str(int(row))+'.'+str(int(col)) + " - " + str(int(row))+'.'+str(int(col)+len(text)))
+
+        del_parts = text.split('\n')
+        l_row = row
+        l_col = col
+
+        for part in del_parts:
+            self.text_box.delete(str(int(l_row))+'.'+str(int(l_col)), str(int(l_row))+'.'+str(int(l_col)+len(part)))
+            l_row += 1
+            l_col = 0
+
         self.on_text_changed_handler(None)
         self.text_box.delete(str(int(row))+'.'+str(int(col)), str(int(row))+'.'+str(int(col)+len(text)))
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))

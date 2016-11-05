@@ -78,10 +78,12 @@ class Application(Tk.Frame):
             logging.debug("Deleted " + str(change))
             diff, final_row, final_col = util.find_changes(self.last_text, current_text)
             # Report delete
+            self.connection.send_text_update('D', final_row, final_col, diff)
         else:
             logging.debug("Added " + str(change))
             diff, final_row, final_col = util.find_changes(current_text, self.last_text)
             # Report addition
+            self.connection.send_text_update('A', final_row, final_col, diff)
 
         logging.debug(diff + " at: " + str(final_row) + "." + str(final_col))
         self.last_text = current_text

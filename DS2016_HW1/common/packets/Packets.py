@@ -43,11 +43,11 @@ class UpdateTextPacket:
 
 
 class IntroductionPacket:
-    def __init__(self, c_id=''):
-        self.c_id = c_id
+    def __init__(self, c_name=''):
+        self.c_name = c_name
 
     def serialize(self):
-        payload = self.c_id
+        payload = self.c_name
         header = P.compose_header(P.INTRODUCTION, len(payload))
 
         return header + payload
@@ -55,7 +55,6 @@ class IntroductionPacket:
     @staticmethod
     def try_parse(header, payload):
         if header != P.INTRODUCTION:
-            logging.info("Not introductionpacket header")
             return None
 
         c_id = payload

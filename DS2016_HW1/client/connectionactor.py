@@ -17,7 +17,7 @@ class ConnectionActor(Actor):
 
     def __init__(self, ip, port):
         Actor.__init__(self)
-        self.client_socket = socket(AF_INET, SOCK_STREAM)
+        self.c_socket = socket(AF_INET, SOCK_STREAM)
 
         self.ip = ip
         self.port = port
@@ -40,16 +40,16 @@ class ConnectionActor(Actor):
         elif self.state == self.CONNECTING:
             try:
                 logging.info("Trying to connect")
-                self.client_socket.connect((self.ip, self.port))
+                self.c_socket.connect((self.ip, self.port))
                 logging.info("Connected to the server")
 
-                self.receiver = PacketParser(self.client_socket)
-                self.receiver.sub_on_packet(self.on_packet)
-                self.receiver.sub_on_connection_lost(self.on_connection_lost)
+                self.receiver = PacketParser(self.c_socket)
+                self.receiver.on_packet_delegate = self.on_packet
+                self.receiver.on_connection_lost_delegate = self.on_connection_lost
 
                 intro = IntroductionPacket("Taavi")
                 logging.info("Sending introduction: " + intro.serialize())
-                self.client_socket.send(intro.serialize())
+                self.c_socket.send(intro.serialize())
 
                 self.state = self.WAITING_PACKET
             except error, exc:
@@ -62,8 +62,8 @@ class ConnectionActor(Actor):
         self.message_queue.put(lambda: self.on_packet_handler(packet))
 
     def on_connection_lost(self):
-        self.client_socket.close()
-        self.client_socket = socket(AF_INET, SOCK_STREAM)
+        self.c_socket.close()
+        self.c_socket = socket(AF_INET, SOCK_STREAM)
 
         self.state = self.CONNECTING
 
@@ -80,10 +80,16 @@ class ConnectionActor(Actor):
             self.on_update_text_delegate(option, row, col, text)
 
     def terminate(self):
-        self.client_socket.shutdown(socket.SHUT_WR)
-        self.client_socket.close()
+        self.c_socket.shutdown(socket.SHUT_WR)
+        self.c_socket.close()
 
     def sub_on_update_text(self, func):
         self.on_update_text_delegate = func
 
+    def send_text_update(self, option, row, col, text):
+        self.message_queue.put(lambda: self.send_text_update_handler(option, row, col, text))
 
+    def send_text_update_handler(self, option, row, col, text):
+        packet = UpdateTextPacket(option, row, col, text)
+        logging.info("Sending text update: " + packet.serialize())
+        self.c_socket.send(packet.serialize())

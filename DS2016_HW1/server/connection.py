@@ -20,16 +20,21 @@ class Connection:
     WAITING_INTRODUCTION = 1
     ESTABLISHED = 2
 
-    def __init__(self, c_socket, c_address, c_id="Unknown"):
+    def __init__(self, c_socket, c_address, c_name="Unknown"):
         self.c_socket = c_socket
         self.c_address = c_address
-        self.c_id = c_id
+        self.c_name = c_name
+        self.c_id = c_address[1]
 
         self.state = self.WAITING_INTRODUCTION
-        self.parser = PacketParser(c_socket)
-        self.parser.sub_on_packet(self.process_packet)
 
-    def process_packet(self, packet):
+        self.parser = PacketParser(c_socket)
+        self.parser.on_packet_delegate = self.on_packet
+        self.parser.on_connection_lost_delegate = self.on_connection_lost
+
+        self.on_update_text_delegate = None
+
+    def on_packet(self, packet):
         packet_type = packet.__class__.__name__
         logging.info("Received: " + packet_type)
 
@@ -39,18 +44,30 @@ class Connection:
         if packet_type == "IntroductionPacket":
             self.process_introduction_packet(packet)
 
+    def on_connection_lost(self):
+        self.c_socket.close()
+        
     def process_update_text_packet(self, packet):
         option = packet.option
         row = packet.row
         col = packet.column
         text = packet.text
 
+        self.on_update_text_delegate(self.c_id, option, row, col, text)
+
     def process_introduction_packet(self, packet):
         if self.state == self.WAITING_INTRODUCTION:
-            logging.info("Client at: " + str(self.c_address) + " introduced as: " + packet.c_id)
-            self.c_id = packet.c_id
+            logging.info("Client at: " + str(self.c_address) + " introduced as: " + packet.c_name)
+            self.c_name = packet.c_name
             self.state = self.ESTABLISHED
 
         else:
-            logging.info("Client at: " + str(self.c_address) + " reintroduced as: " + packet.c_id)
-            self.c_id = packet.c_id
+            logging.info("Client at: " + str(self.c_address) + " reintroduced as: " + packet.c_name)
+            self.c_name = packet.c_name
+
+    def send_packet(self, packet):
+        logging.info("Sending packet: " + packet.serialize())
+        self.c_socket.send(packet.serialize())
+
+    def get_cid(self):
+        return self.c_id

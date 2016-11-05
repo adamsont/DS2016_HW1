@@ -25,7 +25,7 @@ class PacketParser(threading.Thread):
 
         #Delegates
         self.on_packet_delegate = None
-        self.on_connection_lost = None
+        self.on_connection_lost_delegate = None
 
         self.start()
 
@@ -34,13 +34,17 @@ class PacketParser(threading.Thread):
             try:
                 data = self.receive_socket.recv(2000)
 
+                if len(data) == 0:
+                    logging.info("Connection closed")
+                    self.on_connection_lost_delegate()
+
                 for item in data:
                     self.process_received_char(item)
 
             except error, exc:
                 logging.info("Connection interrupted")
-                if self.on_connection_lost is not None:
-                    self.on_connection_lost()
+                if self.on_connection_lost_delegate is not None:
+                    self.on_connection_lost_delegate()
                 break
 
     def process_received_char(self, item):
@@ -79,24 +83,24 @@ class PacketParser(threading.Thread):
 
                 self.emit_packet(self.current_header, self.current_payload_buffer)
 
+
                 self.current_payload_buffer = ''
                 self.state = self.WAITING_PACKET_HEADER
-
-    def sub_on_packet(self, func):
-        self.on_packet_delegate = func
-
-    def sub_on_connection_lost(self, func):
-        self.on_connection_lost = func
 
     def try_parse_packet(self, header, payload):
         packet = None
         count = 0
 
-        while packet is None or count < 2:
+        while True:
+            if packet is not None:
+                break
+
             if count == 0:
                 packet = UpdateTextPacket.try_parse(header, payload)
             elif count == 1:
                 packet = IntroductionPacket.try_parse(header, payload)
+            elif count == 2:
+                break
             count += 1
 
         return packet
@@ -107,5 +111,7 @@ class PacketParser(threading.Thread):
         if packet is not None:
             if self.on_packet_delegate is not None:
                 self.on_packet_delegate(packet)
+            else:
+                logging.info("Nobody to delegate to")
         else:
             logging.info("Packet received but unknown")

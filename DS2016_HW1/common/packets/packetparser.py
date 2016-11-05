@@ -1,15 +1,12 @@
 __author__ = 'Taavi'
 
-from socket import *
-from common.utilities.Actor import *
-from time import sleep
-import logging
 import threading
-import common.Protocol as P
-import Queue
+import logging
+
+from packets import *
 
 
-class ReceiverThread(threading.Thread):
+class PacketParser(threading.Thread):
 
     WAITING_PACKET_HEADER = 1
     COMBINING_HEADER = 2
@@ -58,6 +55,10 @@ class ReceiverThread(threading.Thread):
                         logging.info("Got a packet, header: (" + str(self.current_header) + \
                                      ") payload: (" + self.current_payload_buffer + ")")
 
+                        packet = self.try_parse_packet(self.current_header, self.current_payload_buffer)
+                        if packet is not None:
+                            self.on_packet(packet)
+
                         self.current_payload_buffer = ''
                         self.state = self.WAITING_PACKET_HEADER
 
@@ -68,55 +69,18 @@ class ReceiverThread(threading.Thread):
     def subscribe(self, func):
         self.subscribers.append(func)
 
-class ClientConnection(Actor):
+    def on_packet(self, packet):
+        for subscriber in self.subscribers:
+            subscriber(packet)
 
-    # States
-    CONNECTING = 1
-    WAITING_PACKET = 2
-    IDLE = 3
+    def try_parse_packet(self, header, payload):
+        packet = None
+        count = 0
 
-    def __init__(self, ip, port):
-        Actor.__init__(self)
-        self.client_socket = socket(AF_INET, SOCK_STREAM)
+        while packet is None or count < 1:
+            if count == 0:
+                packet = UpdateTextPacket.try_parse(header, payload)
 
-        self.ip = ip
-        self.port = port
-        self.state = self.CONNECTING
-        self.receiver = None
-        self.name = 'ClientConnectionActor'
+            count += 1
 
-        logging.info("Connection started")
-        self.start()
-
-    def tick(self):
-        #State machine
-
-        if self.state == self.IDLE:
-            logging.info("ClientConnection IDLE")
-            pass
-        elif self.state == self.CONNECTING:
-            try:
-                logging.info("Trying to connect")
-                self.client_socket.connect((self.ip, self.port))
-
-                self.receiver = ReceiverThread(self.client_socket)
-                self.receiver.subscribe(self.on_data)
-
-                self.state = self.WAITING_PACKET
-            except error, exc:
-                logging.debug("Socket error")
-
-        elif self.state == self.WAITING_PACKET:
-            b = self.client_socket.recv(2)
-
-    def on_data(self, data):
-        self.message_queue.put(lambda: self.on_data_handler(data))
-
-    def on_data_handler(self, data):
-        logging.info("Received: " + data)
-
-    def terminate(self):
-        self.client_socket.shutdown(socket.SHUT_WR)
-        self.client_socket.close()
-
-
+        return packet

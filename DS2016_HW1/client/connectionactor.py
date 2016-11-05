@@ -1,16 +1,11 @@
 
 __author__ = 'Taavi'
 
+import logging
 from socket import *
 from common.utilities.actor import *
 from common.packets.packetparser import *
-
-from time import sleep
-import logging
-import threading
-import common.protocol as P
-
-import Queue
+from common.packets.packets import *
 
 
 class ConnectionActor(Actor):
@@ -34,7 +29,7 @@ class ConnectionActor(Actor):
         self.start()
 
         #Delegates:
-        self.on_update_text = None
+        self.on_update_text_delegate = None
 
     def tick(self):
         #State machine
@@ -46,19 +41,31 @@ class ConnectionActor(Actor):
             try:
                 logging.info("Trying to connect")
                 self.client_socket.connect((self.ip, self.port))
+                logging.info("Connected to the server")
 
                 self.receiver = PacketParser(self.client_socket)
-                self.receiver.subscribe(self.on_packet)
+                self.receiver.sub_on_packet(self.on_packet)
+                self.receiver.sub_on_connection_lost(self.on_connection_lost)
+
+                intro = IntroductionPacket("Taavi")
+                logging.info("Sending introduction: " + intro.serialize())
+                self.client_socket.send(intro.serialize())
 
                 self.state = self.WAITING_PACKET
             except error, exc:
-                logging.debug("Socket error")
+                logging.debug("Socket error: " + str(exc))
 
         elif self.state == self.WAITING_PACKET:
-            b = self.client_socket.recv(2)
+            pass
 
     def on_packet(self, packet):
         self.message_queue.put(lambda: self.on_packet_handler(packet))
+
+    def on_connection_lost(self):
+        self.client_socket.close()
+        self.client_socket = socket(AF_INET, SOCK_STREAM)
+
+        self.state = self.CONNECTING
 
     def on_packet_handler(self, packet):
         packet_type = packet.__class__.__name__
@@ -70,13 +77,13 @@ class ConnectionActor(Actor):
             col = packet.column
             text = packet.text
 
-            self.on_update_text(option, row, col, text)
+            self.on_update_text_delegate(option, row, col, text)
 
     def terminate(self):
         self.client_socket.shutdown(socket.SHUT_WR)
         self.client_socket.close()
 
     def sub_on_update_text(self, func):
-        self.on_update_text = func
+        self.on_update_text_delegate = func
 
 

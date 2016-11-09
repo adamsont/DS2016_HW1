@@ -83,7 +83,14 @@ class Application(Tk.Frame):
             logging.debug("Added " + str(change))
             diff, row, col = util.find_changes(current_text, self.last_text)
             # Report addition
-            self.report_change('A', row, col, diff)
+            report_row = max(row - 1, 1)
+            report_row2 = report_row + diff.count('\n') + 3
+
+            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2)+".0"))
+            changed_text = changed_text[:-1]
+
+            logging.info("Text added, reporting rows: " + str(report_row) + ":" + str(report_row2) + " with text:\n" + changed_text)
+            self.report_change('A', report_row, report_row2, changed_text)
 
         logging.debug(diff + " at: " + str(row) + "." + str(col))
         self.last_text = current_text
@@ -99,9 +106,11 @@ class Application(Tk.Frame):
         self.msg_queue.put(lambda: self.on_text_changed_handler(event))
 
     def add_text(self, row, col, text):
-        logging.info('Adding text: ' + text + " at " + str(int(row))+'.'+str(int(col)))
-        self.on_text_changed_handler(None)
-        self.text_box.insert(str(int(row))+'.'+str(int(col)), text)
+        logging.info('Adding text: ' + text + " at " + str(int(row))+':'+str(int(col)))
+        #self.on_text_changed_handler(None)
+
+        self.text_box.delete(str(int(row))+'.0', str(int(col))+'.0')
+        self.text_box.insert(str(int(row))+'.0', text)
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
         self.last_text.pop()
 
@@ -123,7 +132,7 @@ class Application(Tk.Frame):
         self.last_text.pop()
 
     def test(self):
-        self.text_box.delete('1.3', '1.6')
+        self.text_box.delete('2.0', '5.0')
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
 
     def process_update_text_handler(self, option, row, col, text):

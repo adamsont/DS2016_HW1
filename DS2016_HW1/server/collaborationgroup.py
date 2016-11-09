@@ -15,12 +15,22 @@ class CollaborationGroup(Actor):
         logging.info("Adding new collaborator")
         self.collaborators.append(connection)
         connection.on_update_text_delegate = self.on_update_text
+        connection.on_connection_lost_delegate = self.on_collaborator_lost
 
     def tick(self):
         pass
 
     def on_update_text(self, c_id, option, row, col, text):
         self.message_queue.put(lambda: self.on_update_text_handler(c_id, option, row, col, text))
+
+    def on_collaborator_lost(self, c_id):
+        self.message_queue.put(lambda: self.on_collaborator_lost_handler(c_id))
+
+    def on_collaborator_lost_handler(self, c_id):
+        for c in self.collaborators:
+            if c.get_cid() == c_id:
+                self.collaborators.remove(c)
+                break
 
     def on_update_text_handler(self, c_id, option, row, col, text):
         logging.info("Collaborator " + str(c_id) + " changed text")

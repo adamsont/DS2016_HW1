@@ -46,7 +46,6 @@ def find_changes(longer_text, shorter_text):
 
     for j in range(len(longer_text) - counter):
         if j+counter == len(longer_text) and longer_text[j+counter] == '\n':
-            logging.debug("Breaking")
             break
         diff += longer_text[j+counter]
 

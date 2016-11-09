@@ -32,7 +32,9 @@ class Connection:
         self.parser.on_packet_delegate = self.on_packet
         self.parser.on_connection_lost_delegate = self.on_connection_lost
 
+        #Delegates
         self.on_update_text_delegate = None
+        self.on_connection_lost_delegate = None
 
     def on_packet(self, packet):
         packet_type = packet.__class__.__name__
@@ -46,6 +48,7 @@ class Connection:
 
     def on_connection_lost(self):
         self.c_socket.close()
+        self.on_connection_lost_delegate(self.c_id)
         
     def process_update_text_packet(self, packet):
         option = packet.option

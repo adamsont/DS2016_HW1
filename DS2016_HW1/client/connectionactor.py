@@ -72,12 +72,7 @@ class ConnectionActor(Actor):
         logging.info("Received: " + packet_type)
 
         if packet_type == 'UpdateTextPacket':
-            option = packet.option
-            row = packet.row
-            col = packet.column
-            text = packet.text
-
-            self.on_update_text_delegate(option, row, col, text)
+            self.on_update_text_delegate(packet)
 
     def terminate(self):
         self.c_socket.shutdown(socket.SHUT_WR)

@@ -51,12 +51,7 @@ class Connection:
         self.on_connection_lost_delegate(self.c_id)
         
     def process_update_text_packet(self, packet):
-        option = packet.option
-        row = packet.row
-        col = packet.column
-        text = packet.text
-
-        self.on_update_text_delegate(self.c_id, option, row, col, text)
+        self.on_update_text_delegate(self.c_id, packet)
 
     def process_introduction_packet(self, packet):
         if self.state == self.WAITING_INTRODUCTION:

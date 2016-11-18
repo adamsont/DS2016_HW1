@@ -4,18 +4,18 @@ import common.protocol as P
 import logging
 
 class UpdateTextPacket:
-    def __init__(self, option='A', row=0, column=0, text=''):
+    def __init__(self, option='A', row_start=0, row_end=0, text=''):
         self.option = option
-        self.row = row
-        self.column = column
+        self.row_start = row_start
+        self.row_end = row_end
         self.text = text
 
     def serialize(self):
         payload = self.option
         payload += P.PAYLOAD_FIELD_SEPARATOR
-        payload += str(self.row)
+        payload += str(self.row_start)
         payload += P.PAYLOAD_FIELD_SEPARATOR
-        payload += str(self.column)
+        payload += str(self.row_end)
         payload += P.PAYLOAD_FIELD_SEPARATOR
         payload += self.text
 
@@ -34,11 +34,11 @@ class UpdateTextPacket:
             return None
 
         option = parts[0]
-        row = int(parts[1])
-        col = int(parts[2])
+        row_start = int(parts[1])
+        row_end = int(parts[2])
         text = P.PAYLOAD_FIELD_SEPARATOR.join(parts[3:])
 
-        packet = UpdateTextPacket(option,row,col,text)
+        packet = UpdateTextPacket(option,row_start,row_end,text)
         return packet
 
 

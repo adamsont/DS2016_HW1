@@ -147,11 +147,11 @@ class Application(Tk.Frame):
         self.text_box.delete('2.0', '5.0')
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
 
-    def process_update_text_handler(self, option, row, col, text):
-        if option == 'A':
-            self.add_text(row, col, text)
-        elif option == 'D':
-            self.add_text(row, col, text)
+    def process_update_text_handler(self, packet):
+        if packet.option == 'A':
+            self.add_text(packet.row_start, packet.row_end, packet.text)
+        elif packet.option == 'D':
+            self.add_text(packet.row_start, packet.row_end, packet.text)
         else:
             logging.info("Unknown text update option")
 
@@ -159,8 +159,8 @@ class Application(Tk.Frame):
     # Public functions, add messages to the queue
     #
 
-    def process_update_text(self, option, row, col, text):
-        self.msg_queue.put(lambda: self.process_update_text_handler(option, row, col, text))
+    def process_update_text(self, packet):
+        self.msg_queue.put(lambda: self.process_update_text_handler(packet))
 
 
 logging.basicConfig(level=logging.DEBUG)

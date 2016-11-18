@@ -77,12 +77,20 @@ class Application(Tk.Frame):
         if len(current_text) < len(self.last_text):
             logging.debug("Deleted " + str(change))
             diff, row, col = util.find_changes(self.last_text, current_text)
-            # Report delete
-            self.report_change('D', row, col, diff)
+
+            report_row = max(row - 1, 1)
+            report_row2 = report_row + diff.count('\n') + 3
+
+            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2)+".0"))
+            changed_text = changed_text[:-1]
+
+            logging.info("Text removed, reporting rows: " + str(report_row) + ":" + str(report_row2) + " with text:\n" + changed_text)
+            self.report_change('D', report_row, report_row2, changed_text)
+
         else:
             logging.debug("Added " + str(change))
             diff, row, col = util.find_changes(current_text, self.last_text)
-            # Report addition
+
             report_row = max(row - 1, 1)
             report_row2 = report_row + diff.count('\n') + 3
 
@@ -109,6 +117,9 @@ class Application(Tk.Frame):
         logging.info('Adding text: ' + text + " at " + str(int(row))+':'+str(int(col)))
         #self.on_text_changed_handler(None)
 
+        if row > 1:
+            text = '\n' + text
+
         self.text_box.delete(str(int(row))+'.0', str(int(col))+'.0')
         self.text_box.insert(str(int(row))+'.0', text)
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
@@ -116,18 +127,19 @@ class Application(Tk.Frame):
 
     def remove_text(self, row, col, text):
         logging.info('Removing text: ' + text + " at " + str(int(row))+'.'+str(int(col)) + " - " + str(int(row))+'.'+str(int(col)+len(text)))
+        self.text_box.delete(str(int(row))+'.0', str(int(col))+'.0')
 
-        del_parts = text.split('\n')
-        l_row = row
-        l_col = col
-
-        for part in del_parts:
-            self.text_box.delete(str(int(l_row))+'.'+str(int(l_col)), str(int(l_row))+'.'+str(int(l_col)+len(part)))
-            l_row += 1
-            l_col = 0
-
-        self.on_text_changed_handler(None)
-        self.text_box.delete(str(int(row))+'.'+str(int(col)), str(int(row))+'.'+str(int(col)+len(text)))
+        #del_parts = text.split('\n')
+        #l_row = row
+        #l_col = col
+#
+        #for part in del_parts:
+        #    self.text_box.delete(str(int(l_row))+'.'+str(int(l_col)), str(int(l_row))+'.'+str(int(l_col)+len(part)))
+        #    l_row += 1
+        #    l_col = 0
+#
+        #self.on_text_changed_handler(None)
+        #self.text_box.delete(str(int(row))+'.'+str(int(col)), str(int(row))+'.'+str(int(col)+len(text)))
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
         self.last_text.pop()
 
@@ -139,7 +151,7 @@ class Application(Tk.Frame):
         if option == 'A':
             self.add_text(row, col, text)
         elif option == 'D':
-            self.remove_text(row, col, text)
+            self.add_text(row, col, text)
         else:
             logging.info("Unknown text update option")
 

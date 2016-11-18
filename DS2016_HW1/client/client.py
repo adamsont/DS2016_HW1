@@ -33,7 +33,7 @@ class Application(Tk.Frame):
         self.inner_loop()
 
         self.connection = connectionactor.ConnectionActor(P.SERVER_HOST, P.SERVER_PORT)
-        self.connection.sub_on_update_text(self.process_update_text)
+        self.connection.on_update_text_delegate = self.process_update_text
 
     # Handles all requests from another threads and runs them in its own
     def inner_loop(self):

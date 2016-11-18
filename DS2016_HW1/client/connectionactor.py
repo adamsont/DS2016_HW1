@@ -78,9 +78,6 @@ class ConnectionActor(Actor):
         self.c_socket.shutdown(socket.SHUT_WR)
         self.c_socket.close()
 
-    def sub_on_update_text(self, func):
-        self.on_update_text_delegate = func
-
     def send_text_update(self, option, row, col, text):
         self.message_queue.put(lambda: self.send_text_update_handler(option, row, col, text))
 

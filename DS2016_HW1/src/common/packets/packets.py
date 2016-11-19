@@ -44,7 +44,7 @@ class DocumentRequestPacket:
             return None
 
         file_name = payload
-        packet = DocumentDownloadPacket(file_name)
+        packet = DocumentRequestPacket(file_name)
         return packet
 
 
@@ -105,7 +105,7 @@ class RequestResponsePacket:
     def serialize(self):
         payload = str(self.response)
         header = P.construct_header(P.REQUEST_RESPONSE, len(payload))
-        return header
+        return header + payload
 
     @staticmethod
     def try_parse(header, payload):
@@ -118,17 +118,17 @@ class RequestResponsePacket:
 
 
 class DocumentDownloadPacket:
-    def __init__(self, fragment_id, total_fragments, text):
-        self.fragment_id = fragment_id
-        self.total_fragments = total_fragments
-        self.text = text
+    def __init__(self, chunk_id, total_chunks, chunk):
+        self.chunk_id = chunk_id
+        self.total_chunks = total_chunks
+        self.chunk = chunk
 
     def serialize(self):
-        payload = self.fragment_id
+        payload = str(self.chunk_id)
         payload += P.PAYLOAD_FIELD_SEPARATOR
-        payload += self.total_fragments
+        payload += str(self.total_chunks)
         payload += P.PAYLOAD_FIELD_SEPARATOR
-        payload += self.text
+        payload += self.chunk
 
         header = P.construct_header(P.DOCUMENT_DOWNLOAD, len(payload))
 
@@ -144,11 +144,11 @@ class DocumentDownloadPacket:
         if len(parts) < 3:
             return None
 
-        fragment_id = parts[0]
-        total_fragments = int(parts[1])
-        text = P.PAYLOAD_FIELD_SEPARATOR.join(parts[2:])
+        chunk_id = int(parts[0])
+        total_chunks = int(parts[1])
+        chunk = P.PAYLOAD_FIELD_SEPARATOR.join(parts[2:])
 
-        packet = DocumentDownloadPacket(fragment_id, total_fragments, text)
+        packet = DocumentDownloadPacket(chunk_id, total_chunks, chunk)
         return packet
 
 

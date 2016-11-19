@@ -12,7 +12,7 @@ class ClientActor(Actor):
 
     # States
     CONNECTING = 1
-    WAIT_INTRODUCTION_CONFIRMATION = 2
+    WAIT_DOWNLOAD_RESPONSE = 2
     DOWNLOADING_DOCUMENT = 3
     WAITING_PACKET = 4
     IDLE = 5
@@ -25,6 +25,8 @@ class ClientActor(Actor):
         self.port = port
         self.user_name = user_name
 
+        self.currently_downloaded_document = ''
+
         self.state = self.CONNECTING
         self.parser = None
         self.name = 'ClientConnectionActor'
@@ -34,6 +36,7 @@ class ClientActor(Actor):
 
         #Delegates:
         self.on_update_text_delegate = None
+        self.on_document_delegate = None
 
     def tick(self):
         #State machine
@@ -52,13 +55,17 @@ class ClientActor(Actor):
 
                 intro = IntroductionPacket(self.user_name)
                 logging.info("Sending introduction: " + intro.serialize())
-                self.c_socket.send(intro.serialize())
+                self.send_packet(intro)
 
-                self.state = self.WAIT_INTRODUCTION_CONFIRMATION
+                drp = DocumentRequestPacket('correct')
+                logging.info("Requesting current document")
+                self.send_packet(drp)
+
+                self.state = self.WAIT_DOWNLOAD_RESPONSE
 
             except error, exc:
                 pass
-        elif self.state == self.WAIT_INTRODUCTION_CONFIRMATION:
+        elif self.state == self.WAIT_DOWNLOAD_RESPONSE:
             pass
 
         elif self.state == self.DOWNLOADING_DOCUMENT:
@@ -99,6 +106,10 @@ class ClientActor(Actor):
 
         if packet_type == 'UpdateTextPacket':
             self.on_update_text_delegate(packet)
+        elif packet_type == "RequestResponsePacket":
+            self.process_request_response(packet)
+        elif packet_type == "DocumentDownloadPacket":
+            self.process_document_download_packet(packet)
 
     def terminate(self):
         self.c_socket.shutdown(socket.SHUT_WR)
@@ -109,4 +120,30 @@ class ClientActor(Actor):
         logging.info("Sending text update: " + packet.serialize())
         self.c_socket.send(packet.serialize())
 
+    def send_packet(self, packet):
+        logging.debug("Sent packet: " + packet.serialize())
+        self.c_socket.send(packet.serialize())
 
+    def process_request_response(self, packet):
+        resp = packet.response
+        if self.state == self.WAIT_DOWNLOAD_RESPONSE:
+            if resp == 'Y':
+                logging.info("Server accepted document request")
+                self.state = self.DOWNLOADING_DOCUMENT
+            else:
+                logging.info("Server declined document request")
+                #TODO! let client know that this document is not available
+                pass
+
+    def process_document_download_packet(self, packet):
+        total_chunks = packet.total_chunks
+        current_chunk = packet.chunk_id
+
+        logging.info("Processing download chunk: " + str(current_chunk) + " of " + str(total_chunks))
+        self.currently_downloaded_document += packet.chunk
+
+        if current_chunk == total_chunks:
+            logging.info("Successfully downloaded whole document")
+            self.on_document_delegate(self.currently_downloaded_document)
+            self.currently_downloaded_document = ''
+            self.state = self.IDLE

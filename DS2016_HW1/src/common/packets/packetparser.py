@@ -105,8 +105,10 @@ class PacketParser(threading.Thread):
             elif count == 2:
                 packet = RequestResponsePacket.try_parse(header, payload)
             elif count == 3:
-                packet = RequestNotOkPacket.try_parse(header, payload)
+                packet = DocumentRequestPacket.try_parse(header, payload)
             elif count == 4:
+                packet = DocumentDownloadPacket.try_parse(header, payload)
+            elif count == 5:
                 break
             count += 1
 

@@ -25,6 +25,8 @@ class Connection:
         self.c_name = c_name
         self.c_id = c_address[1]
 
+        self.document_text = "SERVER DOCUMENT TEXT\n" * 20
+
         self.state = self.WAITING_INTRODUCTION
 
         self.parser = PacketParser(c_socket)
@@ -42,8 +44,11 @@ class Connection:
         if packet_type == 'UpdateTextPacket':
             self.process_update_text_packet(packet)
 
-        if packet_type == "IntroductionPacket":
+        elif packet_type == "IntroductionPacket":
             self.process_introduction_packet(packet)
+
+        elif packet_type == "DocumentRequestPacket":
+            self.process_document_request_packet(packet)
 
     def on_connection_lost(self):
         self.c_socket.close()
@@ -63,9 +68,34 @@ class Connection:
             logging.info("Client at: " + str(self.c_address) + " reintroduced as: " + packet.c_name)
             self.c_name = packet.c_name
 
+    def process_document_request_packet(self, packet):
+        file_name = packet.file_name
+
+        logging.info("Client: " + self.c_name + " requested document: " + file_name)
+
+        if file_name == 'correct':
+            rrp = RequestResponsePacket('Y')
+            self.send_packet(rrp)
+            self.send_document(self.document_text)
+        else:
+            rrp = RequestResponsePacket('N')
+            self.send_packet(rrp)
+
     def send_packet(self, packet):
         logging.info("Sending packet: " + packet.serialize())
         self.c_socket.send(packet.serialize())
+
+    def send_document(self, doc_text):
+        logging.info("Sending client: " + self.c_name + " document")
+        chunk_size = 50
+        chunks = [doc_text[i:i+chunk_size] for i in range(0, len(doc_text),chunk_size)]
+        total_chunks = len(chunks)
+        count = 1
+
+        for chunk in chunks:
+            ddp = DocumentDownloadPacket(count, total_chunks, chunk)
+            self.send_packet(ddp)
+            count += 1
 
     def get_cid(self):
         return self.c_id

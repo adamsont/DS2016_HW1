@@ -37,6 +37,7 @@ class Application(Tk.Frame):
 
         self.connection = client_actor.ClientActor(P.SERVER_HOST, P.SERVER_PORT, self.user_name)
         self.connection.on_update_text_delegate = self.process_update_text
+        self.connection.on_document_delegate = self.process_new_document
 
     # Handles all requests from another threads and runs them in its own
     def inner_loop(self):
@@ -158,6 +159,10 @@ class Application(Tk.Frame):
         else:
             logging.info("Unknown text update option")
 
+    def process_new_document_handler(self, text):
+        self.text_box.delete('1.0', Tk.END)
+        self.text_box.insert('1.0', text)
+        self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
     #
     # PUBLIC
     #
@@ -165,6 +170,8 @@ class Application(Tk.Frame):
     def process_update_text(self, packet):
         self.msg_queue.put(lambda: self.process_update_text_handler(packet))
 
+    def process_new_document(self, text):
+        self.msg_queue.put(lambda: self.process_new_document_handler(text))
 
 logging.basicConfig(level=logging.DEBUG)
 

@@ -57,7 +57,7 @@ def replace_text(current_str, replace_str, row_start, row_end):
     replace_lines = replace_str.split('\n')
 
     if row_end > len(current_lines):
-        row_end = len(current_lines)
+        row_end = len(current_lines) - 1
 
     logging.info("cur_len:" +str(len(current_lines)) + " rep_len:" +str(len(replace_lines))+ " rs:" + str(row_start) + " re:" + str(row_end))
     line_count = row_end - row_start

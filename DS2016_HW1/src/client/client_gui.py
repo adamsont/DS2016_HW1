@@ -7,7 +7,7 @@ import logging
 import common.protocol as P
 
 import common.utilities.Utilities as util
-import connectionactor
+import client_actor
 import TestThread
 
 
@@ -32,7 +32,7 @@ class Application(Tk.Frame):
         self.create_widgets()
         self.inner_loop()
 
-        self.connection = connectionactor.ConnectionActor(P.SERVER_HOST, P.SERVER_PORT)
+        self.connection = client_actor.ClientActor(P.SERVER_HOST, P.SERVER_PORT)
         self.connection.on_update_text_delegate = self.process_update_text
 
     # Handles all requests from another threads and runs them in its own

@@ -18,7 +18,7 @@ PAYLOAD_FIELD_SEPARATOR = ':'
 
 INTRODUCTION = 1
 REQUEST_DOCUMENT_LIST = 2
-REQUEST_DOCUMENT = 3
+DOCUMENT_REQUEST = 3
 
 #
 # Server -> Client
@@ -26,7 +26,7 @@ REQUEST_DOCUMENT = 3
 
 CONFIRMATION = 11
 RESPOND_DOCUMENT_LIST = 12
-RESPOND_DOCUMENT = 13
+DOCUMENT_DOWNLOAD = 13
 DEBUG_MESSAGE = 99
 
 #
@@ -37,14 +37,14 @@ UPDATE_TEXT = 20 # <A/D>:row:col:text
 
 headers = [INTRODUCTION,
            REQUEST_DOCUMENT_LIST,
-           REQUEST_DOCUMENT,
+           DOCUMENT_REQUEST,
            CONFIRMATION,
            RESPOND_DOCUMENT_LIST,
            UPDATE_TEXT,
            DEBUG_MESSAGE]
 
 
-def compose_header(header, payload_len):
+def construct_header(header, payload_len):
     ret_header = PACKET_START
     ret_header += HEADER_FIELD_SEPARATOR
     ret_header += format(header, '02d')

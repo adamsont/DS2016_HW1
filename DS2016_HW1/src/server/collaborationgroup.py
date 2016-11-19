@@ -12,19 +12,30 @@ class CollaborationGroup(Actor):
         self.start()
 
     def add_collaborator(self, connection):
-        logging.info("Adding new collaborator")
-        self.collaborators.append(connection)
-        connection.on_update_text_delegate = self.on_update_text
-        connection.on_connection_lost_delegate = self.on_collaborator_lost
+        self.message_queue.put(lambda: self.add_collaborator_handler(connection))
 
     def tick(self):
         pass
+
+    #
+    # PUBLIC
+    #
 
     def on_update_text(self, c_id, packet):
         self.message_queue.put(lambda: self.on_update_text_handler(c_id, packet))
 
     def on_collaborator_lost(self, c_id):
         self.message_queue.put(lambda: self.on_collaborator_lost_handler(c_id))
+
+    #
+    # PRIVATE
+    #
+
+    def add_collaborator_handler(self, connection):
+        logging.info("Adding new collaborator")
+        self.collaborators.append(connection)
+        connection.on_update_text_delegate = self.on_update_text
+        connection.on_connection_lost_delegate = self.on_collaborator_lost
 
     def on_collaborator_lost_handler(self, c_id):
         for c in self.collaborators:

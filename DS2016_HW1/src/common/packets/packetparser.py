@@ -22,6 +22,7 @@ class PacketParser(threading.Thread):
         self.current_payload_buffer = ''
         self.header_buffer = ''
         self.state = self.WAITING_PACKET_HEADER
+        self.running = True
 
         #Delegates
         self.on_packet_delegate = None
@@ -30,7 +31,7 @@ class PacketParser(threading.Thread):
         self.start()
 
     def run(self):
-        while True:
+        while self.running:
             try:
                 data = self.receive_socket.recv(2000)
 
@@ -46,6 +47,9 @@ class PacketParser(threading.Thread):
                 if self.on_connection_lost_delegate is not None:
                     self.on_connection_lost_delegate()
                 break
+
+    def stop(self):
+        self.running = False
 
     def process_received_char(self, item):
         if self.state == self.WAITING_PACKET_HEADER:

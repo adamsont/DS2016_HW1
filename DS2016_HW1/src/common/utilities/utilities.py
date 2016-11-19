@@ -50,3 +50,25 @@ def find_changes(longer_text, shorter_text):
         diff += longer_text[j+counter]
 
     return diff, final_row, final_col
+
+
+def replace_text(current_str, replace_str, row_start, row_end):
+    current_lines = current_str.split('\n')
+    replace_lines = replace_str.split('\n')
+
+    if row_end > len(current_lines):
+        row_end = len(current_lines)
+
+    logging.info("cur_len:" +str(len(current_lines)) + " rep_len:" +str(len(replace_lines))+ " rs:" + str(row_start) + " re:" + str(row_end))
+    line_count = row_end - row_start
+
+    for i in range(line_count):
+        logging.info("Replacing line: " + current_lines[row_start + i] + " with: " + replace_lines[i])
+        current_lines[row_start + i - 1] = replace_lines[i]
+
+    current_text = ''
+
+    for line in current_lines:
+        current_text += line + '\n'
+
+    return current_text

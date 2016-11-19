@@ -6,7 +6,7 @@ import logging
 
 import common.protocol as P
 
-import common.utilities.Utilities as util
+import common.utilities.utilities as util
 import client_actor
 import TestThread
 
@@ -83,9 +83,9 @@ class Application(Tk.Frame):
             diff, row, col = util.find_changes(self.last_text, current_text)
 
             report_row = max(row - 1, 1)
-            report_row2 = report_row + diff.count('\n') + 3
+            report_row2 = report_row + diff.count('\n') + 2
 
-            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2)+".0"))
+            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2 + 1)+".0"))
             changed_text = changed_text[:-1]
 
             logging.info("Text removed, reporting rows: " + str(report_row) + ":" + str(report_row2) + " with text:\n" + changed_text)
@@ -96,9 +96,9 @@ class Application(Tk.Frame):
             diff, row, col = util.find_changes(current_text, self.last_text)
 
             report_row = max(row - 1, 1)
-            report_row2 = report_row + diff.count('\n') + 3
+            report_row2 = report_row + diff.count('\n') + 2
 
-            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2)+".0"))
+            changed_text = unicode(self.text_box.get(str(report_row)+".0", str(report_row2 + 1)+".0"))
             changed_text = changed_text[:-1]
 
             logging.info("Text added, reporting rows: " + str(report_row) + ":" + str(report_row2) + " with text:\n" + changed_text)
@@ -117,17 +117,14 @@ class Application(Tk.Frame):
     def on_text_changed(self, event):
         self.msg_queue.put(lambda: self.on_text_changed_handler(event))
 
-    def add_text(self, row, col, text):
-        logging.info('Adding text: ' + text + " at " + str(int(row))+':'+str(int(col)))
+    def add_text(self, row_start, row_end, text):
+        logging.info('Adding text: ' + text + " at " + str(int(row_start))+':'+str(int(row_end)))
         #self.on_text_changed_handler(None)
 
-        if row > 1:
-            text = '\n' + text
+        current_text = str(self.text_box.get('1.0', Tk.END))
+        current_text = util.replace_text(current_text, text, row_start, row_end)
 
-        self.text_box.delete(str(int(row))+'.0', str(int(col))+'.0')
-        self.text_box.insert(str(int(row))+'.0', text)
-        self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
-        self.last_text.pop()
+        self.set_text(current_text)
 
     def remove_text(self, row, col, text):
         logging.info('Removing text: ' + text + " at " + str(int(row))+'.'+str(int(col)) + " - " + str(int(row))+'.'+str(int(col)+len(text)))
@@ -160,9 +157,13 @@ class Application(Tk.Frame):
             logging.info("Unknown text update option")
 
     def process_new_document_handler(self, text):
+        self.set_text(text)
+
+    def set_text(self, text):
         self.text_box.delete('1.0', Tk.END)
         self.text_box.insert('1.0', text)
         self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
+        self.last_text.pop()
     #
     # PUBLIC
     #

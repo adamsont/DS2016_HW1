@@ -25,7 +25,7 @@ class Connection:
         self.c_name = c_name
         self.c_id = c_address[1]
 
-        self.document_text = "SERVER DOCUMENT TEXT\n" * 20
+        self.document_text = "11111\n22222\n33333\n44444\n55555\n66666\n77777\n"
 
         self.state = self.WAITING_INTRODUCTION
 

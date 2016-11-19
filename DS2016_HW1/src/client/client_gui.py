@@ -13,10 +13,13 @@ import TestThread
 
 class Application(Tk.Frame):
 
-    def __init__(self, master=None):
+    def __init__(self, master=None, user_name=''):
         Tk.Frame.__init__(self, master)
         self.grid()
-        self.master.title("Client App")
+
+        self.user_name = user_name
+
+        self.master.title("Client App as " + self.user_name)
         master.geometry('{}x{}'.format(800, 600))
         #
         # Variables
@@ -32,7 +35,7 @@ class Application(Tk.Frame):
         self.create_widgets()
         self.inner_loop()
 
-        self.connection = client_actor.ClientActor(P.SERVER_HOST, P.SERVER_PORT)
+        self.connection = client_actor.ClientActor(P.SERVER_HOST, P.SERVER_PORT, self.user_name)
         self.connection.on_update_text_delegate = self.process_update_text
 
     # Handles all requests from another threads and runs them in its own
@@ -107,7 +110,7 @@ class Application(Tk.Frame):
         self.connection.send_text_update(option, row, col, text)
 
     #
-    # Private functions
+    # PRIVATE
     #
 
     def on_text_changed(self, event):
@@ -156,7 +159,7 @@ class Application(Tk.Frame):
             logging.info("Unknown text update option")
 
     #
-    # Public functions, add messages to the queue
+    # PUBLIC
     #
 
     def process_update_text(self, packet):
@@ -165,8 +168,9 @@ class Application(Tk.Frame):
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 root = Tk.Tk()
-app = Application(master=root)
+app = Application(master=root, user_name="Keegi teine")
 
 #t = TestThread.TestThread(app.pr, "ABC")
 #t.start()

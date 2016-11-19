@@ -12,16 +12,19 @@ class ClientActor(Actor):
 
     # States
     CONNECTING = 1
-    DOWNLOADING_DOCUMENT = 2
-    WAITING_PACKET = 3
-    IDLE = 4
+    WAIT_INTRODUCTION_CONFIRMATION = 2
+    DOWNLOADING_DOCUMENT = 3
+    WAITING_PACKET = 4
+    IDLE = 5
 
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, user_name):
         Actor.__init__(self)
         self.c_socket = socket(AF_INET, SOCK_STREAM)
 
         self.ip = ip
         self.port = port
+        self.user_name = user_name
+
         self.state = self.CONNECTING
         self.parser = None
         self.name = 'ClientConnectionActor'
@@ -36,7 +39,6 @@ class ClientActor(Actor):
         #State machine
 
         if self.state == self.IDLE:
-            logging.info("ClientConnection IDLE")
             pass
         elif self.state == self.CONNECTING:
             try:
@@ -48,14 +50,16 @@ class ClientActor(Actor):
                 self.parser.on_packet_delegate = self.on_packet
                 self.parser.on_connection_lost_delegate = self.on_connection_lost
 
-                intro = IntroductionPacket("Taavi")
+                intro = IntroductionPacket(self.user_name)
                 logging.info("Sending introduction: " + intro.serialize())
                 self.c_socket.send(intro.serialize())
 
-                self.state = self.WAITING_PACKET
+                self.state = self.WAIT_INTRODUCTION_CONFIRMATION
 
             except error, exc:
                 pass
+        elif self.state == self.WAIT_INTRODUCTION_CONFIRMATION:
+            pass
 
         elif self.state == self.DOWNLOADING_DOCUMENT:
             pass
@@ -75,7 +79,7 @@ class ClientActor(Actor):
 
     def on_connection_lost(self):
         self.message_queue.put(lambda: self.on_connection_lost_handler())
-        
+
     #
     # PRIVATE
     #
@@ -104,3 +108,5 @@ class ClientActor(Actor):
         packet = UpdateTextPacket(option, row, col, text)
         logging.info("Sending text update: " + packet.serialize())
         self.c_socket.send(packet.serialize())
+
+

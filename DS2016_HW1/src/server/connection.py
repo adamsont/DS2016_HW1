@@ -10,7 +10,6 @@ import threading
 import common.protocol as P
 import Queue
 
-
 class Connection:
 
     #
@@ -55,8 +54,9 @@ class Connection:
 
     def process_introduction_packet(self, packet):
         if self.state == self.WAITING_INTRODUCTION:
-            logging.info("Client at: " + str(self.c_address) + " introduced as: " + packet.c_name)
-            self.c_name = packet.c_name
+            c_name = packet.c_name
+            logging.info("Client at: " + str(self.c_address) + " introduced as: " + c_name)
+            self.c_name = c_name
             self.state = self.ESTABLISHED
 
         else:

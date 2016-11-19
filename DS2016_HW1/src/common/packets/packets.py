@@ -4,6 +4,54 @@ import common.protocol as P
 import logging
 
 
+#
+# Client -> Server
+#
+
+class IntroductionPacket:
+    def __init__(self, c_name=''):
+        self.c_name = c_name
+
+    def serialize(self):
+        payload = self.c_name
+        header = P.construct_header(P.INTRODUCTION, len(payload))
+
+        return header + payload
+
+    @staticmethod
+    def try_parse(header, payload):
+        if header != P.INTRODUCTION:
+            return None
+
+        c_id = payload
+        packet = IntroductionPacket(c_id)
+        return packet
+
+
+class DocumentRequestPacket:
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def serialize(self):
+        payload = self.file_name
+        header = P.construct_header(P.DOCUMENT_REQUEST, len(payload))
+
+        return header + payload
+
+    @staticmethod
+    def try_parse(header, payload):
+        if header != P.DOCUMENT_REQUEST:
+            return None
+
+        file_name = payload
+        packet = DocumentDownloadPacket(file_name)
+        return packet
+
+
+#
+# Client <-> Server
+#
+
 class UpdateTextPacket:
     def __init__(self, option='A', row_start=0, row_end=0, text=''):
         self.option = option
@@ -42,24 +90,30 @@ class UpdateTextPacket:
         packet = UpdateTextPacket(option,row_start,row_end,text)
         return packet
 
+#
+# Server -> Client
+#
 
-class IntroductionPacket:
-    def __init__(self, c_name=''):
-        self.c_name = c_name
+
+class RequestResponsePacket:
+    RESPONSE_OK = 'Y'
+    RESPONSE_NOT_OK = 'N'
+
+    def __init__(self, response):
+        self.response = response
 
     def serialize(self):
-        payload = self.c_name
-        header = P.construct_header(P.INTRODUCTION, len(payload))
-
-        return header + payload
+        payload = str(self.response)
+        header = P.construct_header(P.REQUEST_RESPONSE, len(payload))
+        return header
 
     @staticmethod
     def try_parse(header, payload):
-        if header != P.INTRODUCTION:
+        if header != P.REQUEST_RESPONSE:
             return None
 
-        c_id = payload
-        packet = IntroductionPacket(c_id)
+        response = payload
+        packet = RequestResponsePacket(response)
         return packet
 
 
@@ -98,21 +152,3 @@ class DocumentDownloadPacket:
         return packet
 
 
-class DocumentRequestPacket:
-    def __init__(self, file_name):
-        self.file_name = file_name
-
-    def serialize(self):
-        payload = self.file_name
-        header = P.construct_header(P.DOCUMENT_REQUEST, len(payload))
-
-        return header + payload
-
-    @staticmethod
-    def try_parse(header, payload):
-        if header != P.DOCUMENT_REQUEST:
-            return None
-
-        file_name = payload
-        packet = DocumentDownloadPacket(file_name)
-        return packet

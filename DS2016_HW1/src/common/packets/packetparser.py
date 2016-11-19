@@ -98,12 +98,15 @@ class PacketParser(threading.Thread):
         while True:
             if packet is not None:
                 break
-
-            if count == 0:
+            elif count == 0:
                 packet = UpdateTextPacket.try_parse(header, payload)
             elif count == 1:
                 packet = IntroductionPacket.try_parse(header, payload)
             elif count == 2:
+                packet = RequestResponsePacket.try_parse(header, payload)
+            elif count == 3:
+                packet = RequestNotOkPacket.try_parse(header, payload)
+            elif count == 4:
                 break
             count += 1
 

@@ -65,9 +65,11 @@ class Application(Tk.Frame):
         master_frame.pack()
 
     def on_text_changed_handler(self, event):
-        current_text = list(unicode(self.text_box.get("1.0", Tk.END)))
-        current_text.pop()
+        current_text = str(self.text_box.get("1.0", Tk.END))
+        current_text = current_text[:-1]
 
+        self.connection.send_document(current_text)
+        return
         # Deleting is just adding the other way around :D
 
         change = len(current_text) - len(self.last_text)
@@ -126,9 +128,10 @@ class Application(Tk.Frame):
 
         self.set_text(current_text)
 
-    def remove_text(self, row, col, text):
-        logging.info('Removing text: ' + text + " at " + str(int(row))+'.'+str(int(col)) + " - " + str(int(row))+'.'+str(int(col)+len(text)))
-        self.text_box.delete(str(int(row))+'.0', str(int(col))+'.0')
+    def remove_text(self, row_start, row_end, text):
+        logging.info('Removing text: ' + text + " at " + str(int(row_start))+':'+str(int(row_end)))
+        current_text = str(self.text_box.get('1.0', Tk.END))
+        current_text = util.delete_text(current_text, row_start, row_end)
 
         #del_parts = text.split('\n')
         #l_row = row
@@ -141,8 +144,7 @@ class Application(Tk.Frame):
 #
         #self.on_text_changed_handler(None)
         #self.text_box.delete(str(int(row))+'.'+str(int(col)), str(int(row))+'.'+str(int(col)+len(text)))
-        self.last_text = list(unicode(self.text_box.get("1.0", Tk.END)))
-        self.last_text.pop()
+        self.set_text(current_text)
 
     def test(self):
         self.text_box.delete('2.0', '5.0')
@@ -152,11 +154,12 @@ class Application(Tk.Frame):
         if packet.option == 'A':
             self.add_text(packet.row_start, packet.row_end, packet.text)
         elif packet.option == 'D':
-            self.add_text(packet.row_start, packet.row_end, packet.text)
+            self.remove_text(packet.row_start, packet.row_end, packet.text)
         else:
             logging.info("Unknown text update option")
 
     def process_new_document_handler(self, text):
+        logging.info("Setting text: " + text)
         self.set_text(text)
 
     def set_text(self, text):

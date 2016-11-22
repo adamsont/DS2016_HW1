@@ -87,6 +87,8 @@ class ClientActor(Actor):
     def on_connection_lost(self):
         self.message_queue.put(lambda: self.on_connection_lost_handler())
 
+    def send_document(self, text):
+        self.message_queue.put(lambda: self.send_document_handler(text))
     #
     # PRIVATE
     #
@@ -108,7 +110,7 @@ class ClientActor(Actor):
             self.on_update_text_delegate(packet)
         elif packet_type == "RequestResponsePacket":
             self.process_request_response(packet)
-        elif packet_type == "DocumentDownloadPacket":
+        elif packet_type == "DocumentSendPacket":
             self.process_document_download_packet(packet)
 
     def terminate(self):
@@ -146,4 +148,17 @@ class ClientActor(Actor):
             logging.info("Successfully downloaded whole document")
             self.on_document_delegate(self.currently_downloaded_document)
             self.currently_downloaded_document = ''
-            self.state = self.IDLE
+            if self.state == self.DOWNLOADING_DOCUMENT:
+                self.state = self.IDLE
+
+    def send_document_handler(self, doc_text):
+        logging.info("Sending server a document")
+        chunk_size = 500
+        chunks = [doc_text[i:i+chunk_size] for i in range(0, len(doc_text),chunk_size)]
+        total_chunks = len(chunks)
+        count = 1
+
+        for chunk in chunks:
+            ddp = DocumentSendPacket(count, total_chunks, chunk)
+            self.send_packet(ddp)
+            count += 1

@@ -26,6 +26,7 @@ class Connection:
         self.c_id = c_address[1]
 
         self.document_text = "11111\n22222\n33333\n44444\n55555\n66666\n77777\n"
+        self.currently_received_document = ''
 
         self.state = self.WAITING_INTRODUCTION
 
@@ -36,6 +37,7 @@ class Connection:
         #Delegates
         self.on_update_text_delegate = None
         self.on_connection_lost_delegate = None
+        self.on_document_received_delegate = None
 
     def on_packet(self, packet):
         packet_type = packet.__class__.__name__
@@ -49,6 +51,9 @@ class Connection:
 
         elif packet_type == "DocumentRequestPacket":
             self.process_document_request_packet(packet)
+
+        elif packet_type == "DocumentSendPacket":
+            self.process_document_send_packet(packet)
 
     def on_connection_lost(self):
         self.c_socket.close()
@@ -81,19 +86,31 @@ class Connection:
             rrp = RequestResponsePacket('N')
             self.send_packet(rrp)
 
+    def process_document_send_packet(self, packet):
+        total_chunks = packet.total_chunks
+        current_chunk = packet.chunk_id
+
+        logging.info("Processing document chunk: " + str(current_chunk) + " of " + str(total_chunks))
+        self.currently_received_document += packet.chunk
+
+        if current_chunk == total_chunks:
+            logging.info("Successfully downloaded whole document")
+            self.on_document_received_delegate(self.c_id, self.currently_received_document)
+            self.currently_received_document = ''
+
     def send_packet(self, packet):
         logging.info("Sending packet: " + packet.serialize())
         self.c_socket.send(packet.serialize())
 
     def send_document(self, doc_text):
         logging.info("Sending client: " + self.c_name + " document")
-        chunk_size = 50
+        chunk_size = 500
         chunks = [doc_text[i:i+chunk_size] for i in range(0, len(doc_text),chunk_size)]
         total_chunks = len(chunks)
         count = 1
 
         for chunk in chunks:
-            ddp = DocumentDownloadPacket(count, total_chunks, chunk)
+            ddp = DocumentSendPacket(count, total_chunks, chunk)
             self.send_packet(ddp)
             count += 1
 

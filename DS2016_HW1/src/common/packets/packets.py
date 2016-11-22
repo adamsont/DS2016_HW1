@@ -117,7 +117,7 @@ class RequestResponsePacket:
         return packet
 
 
-class DocumentDownloadPacket:
+class DocumentSendPacket:
     def __init__(self, chunk_id, total_chunks, chunk):
         self.chunk_id = chunk_id
         self.total_chunks = total_chunks
@@ -148,7 +148,8 @@ class DocumentDownloadPacket:
         total_chunks = int(parts[1])
         chunk = P.PAYLOAD_FIELD_SEPARATOR.join(parts[2:])
 
-        packet = DocumentDownloadPacket(chunk_id, total_chunks, chunk)
+        packet = DocumentSendPacket(chunk_id, total_chunks, chunk)
         return packet
+
 
 

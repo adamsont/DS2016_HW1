@@ -72,3 +72,27 @@ def replace_text(current_str, replace_str, row_start, row_end):
         current_text += line + '\n'
 
     return current_text
+
+def delete_text(current_str, row_start, row_end):
+    current_lines = current_str.split('\n')
+
+    if row_end > len(current_lines):
+        row_end = len(current_lines) - 1
+
+    logging.info("cur_len:" +str(len(current_lines)) + " rs:" + str(row_start) + " re:" + str(row_end))
+    line_count = row_end - row_start
+
+    hold_on_lines = []
+
+    for i in range(len(current_lines)):
+        if i - 1 >= row_start and i - 1 <= row_end:
+            logging.info("Not adding line: " + current_lines[i - 1])
+        else:
+            hold_on_lines.append(current_lines[i - 1])
+
+    current_text = ''
+
+    for line in hold_on_lines:
+        current_text += line + '\n'
+
+    return current_text

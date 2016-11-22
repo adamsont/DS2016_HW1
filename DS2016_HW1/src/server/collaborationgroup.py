@@ -27,6 +27,8 @@ class CollaborationGroup(Actor):
     def on_collaborator_lost(self, c_id):
         self.message_queue.put(lambda: self.on_collaborator_lost_handler(c_id))
 
+    def on_document_received(self, c_id, text):
+        self.message_queue.put(lambda: self.on_document_received_handler(c_id, text))
     #
     # PRIVATE
     #
@@ -36,6 +38,7 @@ class CollaborationGroup(Actor):
         self.collaborators.append(connection)
         connection.on_update_text_delegate = self.on_update_text
         connection.on_connection_lost_delegate = self.on_collaborator_lost
+        connection.on_document_received_delegate = self.on_document_received
 
     def on_collaborator_lost_handler(self, c_id):
         for c in self.collaborators:
@@ -44,8 +47,17 @@ class CollaborationGroup(Actor):
                 break
 
     def on_update_text_handler(self, c_id, packet):
+        pass
+        #logging.info("Collaborator " + str(c_id) + " changed text")
+
+        #for collaborator in self.collaborators:
+         #   if collaborator.get_cid() != c_id:
+           #     collaborator.send_packet(packet)
+
+    def on_document_received_handler(self, c_id, text):
         logging.info("Collaborator " + str(c_id) + " changed text")
+        logging.info(text)
 
         for collaborator in self.collaborators:
             if collaborator.get_cid() != c_id:
-                collaborator.send_packet(packet)
+                collaborator.send_document(text)

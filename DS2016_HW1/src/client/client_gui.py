@@ -83,7 +83,7 @@ class Application(Tk.Frame):
 
         self.connection.send_document(current_text)
         return
-        # Deleting is just adding the other way around :D
+        # Legacy stuff - should work if a bit more work could be put into it
 
         #change = len(current_text) - len(self.last_text)
 #

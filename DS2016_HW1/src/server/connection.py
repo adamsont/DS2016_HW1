@@ -10,8 +10,8 @@ import threading
 import common.protocol as P
 import Queue
 
-class Connection:
 
+class Connection:
     #
     # States
     #
@@ -38,6 +38,7 @@ class Connection:
         self.on_update_text_delegate = None
         self.on_connection_lost_delegate = None
         self.on_document_received_delegate = None
+        self.on_document_requested_delegate = None
 
     def on_packet(self, packet):
         packet_type = packet.__class__.__name__
@@ -65,26 +66,15 @@ class Connection:
     def process_introduction_packet(self, packet):
         if self.state == self.WAITING_INTRODUCTION:
             c_name = packet.c_name
-            logging.info("Client at: " + str(self.c_address) + " introduced as: " + c_name)
+            logging.info("Client at: " + str(self.c_address) + " introducing as: " + c_name)
             self.c_name = c_name
-            self.state = self.ESTABLISHED
 
         else:
             logging.info("Client at: " + str(self.c_address) + " reintroduced as: " + packet.c_name)
             self.c_name = packet.c_name
 
     def process_document_request_packet(self, packet):
-        file_name = packet.file_name
-
-        logging.info("Client: " + self.c_name + " requested document: " + file_name)
-
-        if file_name == 'correct':
-            rrp = RequestResponsePacket('Y')
-            self.send_packet(rrp)
-            self.send_document(self.document_text)
-        else:
-            rrp = RequestResponsePacket('N')
-            self.send_packet(rrp)
+        self.on_document_requested_delegate(self.c_id, packet.file_name)
 
     def process_document_send_packet(self, packet):
         total_chunks = packet.total_chunks
@@ -116,3 +106,6 @@ class Connection:
 
     def get_cid(self):
         return self.c_id
+
+    def get_cname(self):
+        return self.c_name

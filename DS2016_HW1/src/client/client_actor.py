@@ -13,17 +13,17 @@ class ClientActor(Actor):
     # States
     CONNECTING = 1
     WAIT_DOWNLOAD_RESPONSE = 2
-    DOWNLOADING_DOCUMENT = 3
-    WAITING_PACKET = 4
-    IDLE = 5
+    DOWNLOADING_DOCUMENT = 4
+    WAITING_PACKET = 5
+    IDLE = 6
 
-    def __init__(self, ip, port, user_name):
+    def __init__(self, ip, port):
         Actor.__init__(self)
         self.c_socket = socket(AF_INET, SOCK_STREAM)
 
         self.ip = ip
         self.port = port
-        self.user_name = user_name
+        self.user_name = 'Unknown'
 
         self.currently_downloaded_document = ''
 
@@ -37,6 +37,8 @@ class ClientActor(Actor):
         #Delegates:
         self.on_update_text_delegate = None
         self.on_document_delegate = None
+        self.on_introduction_result = None
+        self.on_connected_delegate = None
 
     def tick(self):
         #State machine
@@ -52,19 +54,12 @@ class ClientActor(Actor):
                 self.parser = PacketParser(self.c_socket)
                 self.parser.on_packet_delegate = self.on_packet
                 self.parser.on_connection_lost_delegate = self.on_connection_lost
-
-                intro = IntroductionPacket(self.user_name)
-                logging.info("Sending introduction: " + intro.serialize())
-                self.send_packet(intro)
-
-                drp = DocumentRequestPacket('correct')
-                logging.info("Requesting current document")
-                self.send_packet(drp)
+                self.on_connected_delegate()
 
                 self.state = self.WAIT_DOWNLOAD_RESPONSE
 
             except error, exc:
-                pass
+                return
         elif self.state == self.WAIT_DOWNLOAD_RESPONSE:
             pass
 
@@ -89,9 +84,24 @@ class ClientActor(Actor):
 
     def send_document(self, text):
         self.message_queue.put(lambda: self.send_document_handler(text))
+
+    def introduce(self, name):
+        self.message_queue.put(lambda: self.introduce_handler(name))
     #
     # PRIVATE
     #
+
+    def introduce_handler(self, name):
+        if self.state == self.CONNECTING:
+            return
+
+        intro = IntroductionPacket(name)
+        logging.info("Sending introduction: " + intro.serialize())
+        self.send_packet(intro)
+
+        drp = DocumentRequestPacket('correct')
+        logging.info("Requesting current document")
+        self.send_packet(drp)
 
     def on_connection_lost_handler(self):
         self.c_socket.close()

@@ -43,6 +43,7 @@ class Application(Tk.Frame):
         self.connection.on_update_text_delegate = self.process_update_text
         self.connection.on_document_delegate = self.process_new_document
         self.connection.on_connected_delegate = self.initialize
+        self.connection.on_connection_lost_delegate = self.on_connection_lost
 
     # Handles all requests from another threads and runs them in its own
     def inner_loop(self):
@@ -190,6 +191,11 @@ class Application(Tk.Frame):
     def initialize_handler(self):
         self.name_entry.config(state=Tk.NORMAL)
         self.initialized = True
+
+    def on_connection_lost_handler(self):
+        self.text_box.config(state=Tk.DISABLED)
+        self.introduced = False
+        self.initialized = False
     #
     # PUBLIC
     #
@@ -201,6 +207,9 @@ class Application(Tk.Frame):
 
     def process_new_document(self, text):
         self.msg_queue.put(lambda: self.process_new_document_handler(text))
+
+    def on_connection_lost(self):
+        self.msg_queue.put(lambda: self.on_connection_lost_handler())
 
 logging.basicConfig(level=logging.DEBUG)
 root = Tk.Tk()

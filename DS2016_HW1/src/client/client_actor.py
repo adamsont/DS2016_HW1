@@ -14,8 +14,7 @@ class ClientActor(Actor):
     CONNECTING = 1
     WAIT_DOWNLOAD_RESPONSE = 2
     DOWNLOADING_DOCUMENT = 4
-    WAITING_PACKET = 5
-    IDLE = 6
+    READY = 5
 
     def __init__(self, ip, port):
         Actor.__init__(self)
@@ -39,13 +38,12 @@ class ClientActor(Actor):
         self.on_document_delegate = None
         self.on_introduction_result = None
         self.on_connected_delegate = None
+        self.on_connection_lost_delegate = None
 
     def tick(self):
         #State machine
 
-        if self.state == self.IDLE:
-            pass
-        elif self.state == self.CONNECTING:
+        if self.state == self.CONNECTING:
             try:
                 logging.info("Trying to connect")
                 self.c_socket.connect((self.ip, self.port))
@@ -60,15 +58,6 @@ class ClientActor(Actor):
 
             except error, exc:
                 return
-        elif self.state == self.WAIT_DOWNLOAD_RESPONSE:
-            pass
-
-        elif self.state == self.DOWNLOADING_DOCUMENT:
-            pass
-
-        elif self.state == self.WAITING_PACKET:
-            pass
-
     #
     # PUBLIC
     #
@@ -110,6 +99,8 @@ class ClientActor(Actor):
         self.parser.stop()
         self.parser = None
 
+        self.on_connection_lost_delegate()
+
         self.state = self.CONNECTING
 
     def on_packet_handler(self, packet):
@@ -141,7 +132,7 @@ class ClientActor(Actor):
         if self.state == self.WAIT_DOWNLOAD_RESPONSE:
             if resp == 'Y':
                 logging.info("Server accepted document request")
-                self.state = self.DOWNLOADING_DOCUMENT
+                self.state = self.READY
             else:
                 logging.info("Server declined document request")
                 #TODO! let client know that this document is not available
@@ -162,6 +153,9 @@ class ClientActor(Actor):
                 self.state = self.IDLE
 
     def send_document_handler(self, doc_text):
+        if self.state != self.READY:
+            return
+
         logging.info("Sending server a document")
         chunk_size = 500
         chunks = [doc_text[i:i+chunk_size] for i in range(0, len(doc_text),chunk_size)]

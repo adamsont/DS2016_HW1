@@ -67,6 +67,7 @@ class CollaborationGroup(Actor):
 
         self.current_text = text
         self.collaboration_file.seek(0)
+        self.collaboration_file.truncate()
         self.collaboration_file.write(self.current_text)
         self.collaboration_file.flush()
 
